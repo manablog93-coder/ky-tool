@@ -145,7 +145,7 @@
     const prompt = `建設現場の「${selectedType.label}」における危険予知（KY）活動のネタを1件だけ生成してください。${kw ? `危険キーワードは「${kw}」に関連する内容にしてください。` : ""}現場監督が実際に使える具体的な内容にしてください。\n\n以下のJSONのみを返してください（説明不要、バッククォートも不要）:\n{"keyword":"危険キーワード（5文字以内）","danger":"具体的な危険内容（40〜60文字）","countermeasure":"具体的な対策（40〜60文字）","level":"高 or 中 or 低"}`;
 
     try {
-      const res = await fetch("/.netlify/functions/generate", {
+      const res = await fetch("/api/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",     
