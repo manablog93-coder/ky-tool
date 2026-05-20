@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KY活動票 生成ツール【有料版】</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; background: #f5f5f5; color: #333; }
+.container { max-width: 800px; margin: 0 auto; padding: 20px; }
+h1 { font-size: 18px; font-weight: bold; margin-bottom: 16px; color: #222; }
+.input-card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.input-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.input-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
+input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: inherit; }
+textarea { resize: vertical; min-height: 70px; }
+.btn-generate { width: 100%; padding: 12px; font-size: 15px; font-weight: bold; background: #1a56db; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-top: 4px; }
+.btn-generate:hover { background: #1446b8; }
+.btn-generate:disabled { background: #aaa; cursor: not-allowed; }
+
+/* KY用紙 */
+.ky-sheet { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: none; margin-bottom: 16px; }
+.ky-sheet.visible { display: block; }
+.ky-title { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+.ky-header { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; border: 1px solid #999; margin-bottom: 0; }
+.ky-header-cell { padding: 5px 8px; border-right: 1px solid #999; }
+.ky-header-cell:last-child { border-right: none; }
+.ky-header-label { font-size: 10px; color: #666; }
+.ky-header-value { font-size: 13px; font-weight: bold; }
+.ky-table { width: 100%; border-collapse: collapse; border: 1px solid #999; border-top: none; }
+.ky-table th { background: #f0f0f0; font-size: 12px; font-weight: bold; padding: 6px; border: 1px solid #999; text-align: center; }
+.ky-table td { padding: 8px; border: 1px solid #999; vertical-align: top; font-size: 12px; line-height: 1.6; }
+.ky-table td.num { text-align: center; width: 30px; color: #555; }
+.ky-table td.check { text-align: center; width: 40px; font-size: 16px; }
+.ky-sign { display: grid; grid-template-columns: 1fr 1fr 1fr; border: 1px solid #999; border-top: none; }
+.ky-sign-cell { padding: 10px 8px; border-right: 1px solid #999; min-height: 50px; }
+.ky-sign-cell:last-child { border-right: none; }
+.ky-sign-label { font-size: 11px; color: #666; }
+
+.btn-print { width: 100%; padding: 12px; font-size: 15px; font-weight: bold; background: #057a55; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+.btn-print:hover { background: #046c49; }
+.loading-msg { text-align: center; color: #888; padding: 20px; font-size: 13px; }
+
+@media print {
+  body { background: #fff; }
+  .container { padding: 0; }
+  .input-card, .btn-print, h1 { display: none; }
+  .ky-sheet { display: block !important; box-shadow: none; padding: 10px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>KY活動票 生成ツール</h1>
+
+  <div class="input-card">
+    <div class="input-grid">
+      <div><label>作業日</label><input type="date" id="workDate" /></div>
+      <div><label>天候</label><select id="weather"><option>晴れ</option><option>曇り</option><option>雨</option><option>雪</option></select></div>
+      <div><label>作業人員（名）</label><input type="number" id="workers" value="5" min="1" /></div>
+    </div>
+    <div class="input-grid-2">
+      <div><label>工事名</label><input type="text" id="kojiName" placeholder="例：○○ビル新築工事" /></div>
+      <div><label>作業場所</label><input type="text" id="location" placeholder="例：3階 外壁" /></div>
+    </div>
+    <div style="margin-bottom:4px">
+      <label>今日の作業内容</label>
+      <textarea id="workContent" placeholder="例：外壁コンクリートの型枠解体作業"></textarea>
+    </div>
+    <button class="btn-generate" id="genBtn" onclick="generate()">KY活動票を生成する</button>
+  </div>
+
+  <div class="ky-sheet" id="kySheet">
+    <div class="ky-title">危険予知活動票（KY活動票）</div>
+    <div class="ky-header">
+      <div class="ky-header-cell"><div class="ky-header-label">作業日</div><div class="ky-header-value" id="out-date">―</div></div>
+      <div class="ky-header-cell"><div class="ky-header-label">天候</div><div class="ky-header-value" id="out-weather">―</div></div>
+      <div class="ky-header-cell"><div class="ky-header-label">作業場所</div><div class="ky-header-value" id="out-location">―</div></div>
+      <div class="ky-header-cell"><div class="ky-header-label">作業人員</div><div class="ky-header-value" id="out-workers">―</div></div>
+    </div>
+    <table class="ky-table">
+      <thead>
+        <tr>
+          <th style="width:30px">No.</th>
+          <th style="width:28%">今日の作業</th>
+          <th style="width:32%">危険のポイント</th>
+          <th style="width:32%">私たちはこうする</th>
+          <th style="width:40px">確認</th>
+        </tr>
+      </thead>
+      <tbody id="kyBody">
+        <tr><td colspan="5" class="loading-msg">上のフォームを入力して生成ボタンを押してください</td></tr>
+      </tbody>
+    </table>
+    <div class="ky-sign">
+      <div class="ky-sign-cell"><div class="ky-sign-label">リーダー</div></div>
+      <div class="ky-sign-cell"><div class="ky-sign-label">確認者</div></div>
+      <div class="ky-sign-cell"><div class="ky-sign-label">作業責任者</div></div>
+    </div>
+  </div>
+
+  <div id="printArea" style="display:none">
+    <button class="btn-print" onclick="window.print()">印刷・PDF保存</button>
+  </div>
+</div>
+
+<script>
+async function generate() {
+  const workContent = document.getElementById('workContent').value.trim();
+  if (!workContent) { alert('作業内容を入力してください'); return; }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+
+  const date = document.getElementById('workDate').value;
+  const weather = document.getElementById('weather').value;
+  const location = document.getElementById('location').value || '―';
+  const workers = document.getElementById('workers').value;
+
+  document.getElementById('out-date').textContent = date || '―';
+  document.getElementById('out-weather').textContent = weather;
+  document.getElementById('out-location').textContent = location;
+  document.getElementById('out-workers').textContent = workers + '名';
+
+  const sheet = document.getElementById('kySheet');
+  sheet.classList.add('visible');
+  document.getElementById('kyBody').innerHTML = '<tr><td colspan="5" class="loading-msg">AIが生成中です...</td></tr>';
+  document.getElementById('printArea').style.display = 'none';
+
+  const prompt = `建設現場のKY活動票を作成してください。
+作業内容：${workContent}
+作業場所：${location}
+
+以下のJSON形式のみで返してください（説明文・コードブロック不要）：
+[
+  {"work":"作業内容（簡潔に）","danger":"危険のポイント1","measure":"対策1"},
+  {"work":"","danger":"危険のポイント2","measure":"対策2"},
+  {"work":"","danger":"危険のポイント3","measure":"対策3"},
+  {"work":"","danger":"危険のポイント4","measure":"対策4"}
+]
+・1行目のworkのみ作業名を記載、2〜4行目のworkは空欄
+・危険のポイントは現場で実際に起きうる具体的な内容
+・対策は「〜する」「〜を確認する」などの行動文で`;
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content.map(c => c.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    const rows = JSON.parse(clean);
+
+    const tbody = document.getElementById('kyBody');
+    tbody.innerHTML = '';
+    rows.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="num">${i + 1}</td><td>${r.work || ''}</td><td>${r.danger}</td><td>${r.measure}</td><td class="check">□</td>`;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('printArea').style.display = 'block';
+  } catch(e) {
+    document.getElementById('kyBody').innerHTML = '<tr><td colspan="5" class="loading-msg">エラーが発生しました。もう一度お試しください。</td></tr>';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'KY活動票を生成する';
+}
+
+const d = new Date();
+document.getElementById('workDate').value = d.toISOString().split('T')[0];
+</script>
+</body>
+</html>
