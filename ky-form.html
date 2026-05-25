@@ -44,9 +44,10 @@ textarea { resize: vertical; min-height: 70px; }
 
 @media print {
   body { background: #fff; }
-  .container { padding: 0; }
+  .container { max-width: 100%; padding: 0; margin: 0; }
   .input-card, .btn-print, h1 { display: none; }
-  .ky-sheet { display: block !important; box-shadow: none; padding: 10px; }
+  .ky-sheet { display: block !important; box-shadow: none; padding: 0; margin: 0; }
+  @page { margin: 10mm; }
 }
 </style>
 </head>
