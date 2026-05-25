@@ -74,7 +74,8 @@ textarea { resize: vertical; min-height: 70px; }
 
   <div class="ky-sheet" id="kySheet">
     <div class="ky-title">危険予知活動票（KY活動票）</div>
-    <div class="ky-header">
+   <div class="ky-header" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr;">
+      <div class="ky-header-cell"><div class="ky-header-label">工事名</div><div class="ky-header-value" id="out-koji">―</div></div>
       <div class="ky-header-cell"><div class="ky-header-label">作業日</div><div class="ky-header-value" id="out-date">―</div></div>
       <div class="ky-header-cell"><div class="ky-header-label">天候</div><div class="ky-header-value" id="out-weather">―</div></div>
       <div class="ky-header-cell"><div class="ky-header-label">作業場所</div><div class="ky-header-value" id="out-location">―</div></div>
@@ -120,6 +121,7 @@ async function generate() {
   const location = document.getElementById('location').value || '―';
   const workers = document.getElementById('workers').value;
 
+  document.getElementById('out-koji').textContent = document.getElementById('kojiName').value || '―';
   document.getElementById('out-date').textContent = date || '―';
   document.getElementById('out-weather').textContent = weather;
   document.getElementById('out-location').textContent = location;
