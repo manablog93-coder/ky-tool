@@ -164,9 +164,9 @@ async function generate() {
 
     const tbody = document.getElementById('kyBody');
     tbody.innerHTML = '';
-    rows.forEach((r, i) => {
+   rows.forEach((r, i) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td class="num">${i + 1}</td><td>${r.work || ''}</td><td>${r.danger}</td><td>${r.measure}</td><td class="check">□</td>`;
+      tr.innerHTML = `<td class="num">${i + 1}</td><td contenteditable="true">${r.work || ''}</td><td contenteditable="true">${r.danger}</td><td contenteditable="true">${r.measure}</td><td class="check">□</td>`;
       tbody.appendChild(tr);
     });
     document.getElementById('printArea').style.display = 'block';
